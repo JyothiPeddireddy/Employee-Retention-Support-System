@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supportive Retention Signal Engine</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for Longitudinal Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Top Navbar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-indigo-200 shadow-md">
+          <i data-lucide="heart-handshake" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 leading-tight">Supportive Retention Signal Engine</h1>
+          <p class="text-xs text-slate-500 font-medium">Explainable Workforce Signals • Human-in-the-Loop Retention</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+          API Online • Seed 20261022
+        </span>
+        <button onclick="triggerQuickValidation()" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
+          <i data-lucide="shield-check" class="w-4 h-4 mr-1.5 text-indigo-600"></i>
+          Audit Integrity
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-8">
+      <button onclick="switchTab('workbench')" id="tab-workbench" class="tab-btn py-3.5 px-1 border-b-2 border-indigo-600 text-indigo-600 font-semibold text-sm flex items-center">
+        <i data-lucide="users" class="w-4 h-4 mr-2"></i>
+        Supportive Retention Workbench
+      </button>
+      <button onclick="switchTab('timeline')" id="tab-timeline" class="tab-btn py-3.5 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm flex items-center">
+        <i data-lucide="activity" class="w-4 h-4 mr-2"></i>
+        Employee 360 & Timeline
+      </button>
+      <button onclick="switchTab('interventions')" id="tab-interventions" class="tab-btn py-3.5 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm flex items-center">
+        <i data-lucide="message-square" class="w-4 h-4 mr-2"></i>
+        Intervention Touchpoints
+      </button>
+      <button onclick="switchTab('audit')" id="tab-audit" class="tab-btn py-3.5 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm flex items-center">
+        <i data-lucide="alert-triangle" class="w-4 h-4 mr-2"></i>
+        Data Integrity & Anomaly Audit
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- KPI Metric Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Evaluated</span>
+          <span class="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><i data-lucide="users" class="w-4 h-4"></i></span>
+        </div>
+        <div class="text-2xl font-bold text-slate-900" id="kpi-total">-</div>
+        <p class="text-xs text-slate-500 mt-1">24-month longitudinal cohort</p>
+      </div>
+
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-rose-500">High Priority Signals</span>
+          <span class="p-2 bg-rose-50 text-rose-600 rounded-lg"><i data-lucide="alert-circle" class="w-4 h-4"></i></span>
+        </div>
+        <div class="text-2xl font-bold text-rose-600" id="kpi-high">-</div>
+        <p class="text-xs text-slate-500 mt-1">Recommend supportive check-in</p>
+      </div>
+
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-amber-500">Medium Priority</span>
+          <span class="p-2 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="clock" class="w-4 h-4"></i></span>
+        </div>
+        <div class="text-2xl font-bold text-amber-600" id="kpi-medium">-</div>
+        <p class="text-xs text-slate-500 mt-1">Proactive career/workload review</p>
+      </div>
+
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-500">Data Integrity Recall</span>
+          <span class="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><i data-lucide="check-circle" class="w-4 h-4"></i></span>
+        </div>
+        <div class="text-2xl font-bold text-emerald-600" id="kpi-integrity">100%</div>
+        <p class="text-xs text-slate-500 mt-1">4 of 4 edge cases caught</p>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- TAB 1: SUPPORTIVE RETENTION WORKBENCH -->
+    <!-- ==================================================================== -->
+    <div id="view-workbench" class="tab-view block space-y-6">
+      <!-- Filters and Search -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-3 flex-1 min-w-[280px]">
+          <div class="relative w-full max-w-sm">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+            <input type="text" id="filter-search" oninput="filterTable()" placeholder="Search employee name or ID..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <select id="filter-dept" onchange="loadPrioritizedList()" class="border border-slate-200 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="all">All Departments</option>
+            <option value="Engineering">Engineering</option>
+            <option value="Product">Product</option>
+            <option value="Design">Design</option>
+            <option value="Operations">Operations</option>
+            <option value="Sales">Sales</option>
+            <option value="Human Resources">Human Resources</option>
+          </select>
+          <select id="filter-tier" onchange="loadPrioritizedList()" class="border border-slate-200 rounded-lg text-sm px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">All Priority Tiers</option>
+            <option value="HIGH">High Priority Only</option>
+            <option value="MEDIUM">Medium & High</option>
+          </select>
+        </div>
+        <div class="text-xs text-slate-500">
+          Showing <span id="count-showing" class="font-bold text-slate-800">0</span> candidates
+        </div>
+      </div>
+
+      <!-- Candidate Cards List -->
+      <div id="prioritized-list" class="space-y-4">
+        <!-- Injected via JavaScript -->
+        <div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">
+          <i data-lucide="loader" class="w-8 h-8 mx-auto animate-spin mb-2"></i>
+          Loading prioritized supportive retention signals...
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- TAB 2: EMPLOYEE 360 & LONGITUDINAL TIMELINE -->
+    <!-- ==================================================================== -->
+    <div id="view-timeline" class="tab-view hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+          <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg" id="timeline-avatar">
+              --
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900" id="timeline-name">Select an employee from the Workbench</h2>
+              <p class="text-sm text-slate-500" id="timeline-role">--</p>
+            </div>
+          </div>
+          <button onclick="openInterventionModalCurrent()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-sm transition flex items-center">
+            <i data-lucide="message-square" class="w-4 h-4 mr-2"></i>
+            Schedule Supportive 1-on-1
+          </button>
+        </div>
+
+        <!-- Longitudinal Visualizations -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <h3 class="text-sm font-semibold text-slate-800 mb-3 flex items-center">
+              <i data-lucide="clock" class="w-4 h-4 mr-2 text-indigo-600"></i>
+              Workload Trajectory (Weekly Hours over 24 Months)
+            </h3>
+            <div class="h-64">
+              <canvas id="workloadChart"></canvas>
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <h3 class="text-sm font-semibold text-slate-800 mb-3 flex items-center">
+              <i data-lucide="smile" class="w-4 h-4 mr-2 text-emerald-600"></i>
+              Engagement Sentiment Trend (Likert 1-5 Scale)
+            </h3>
+            <div class="h-64">
+              <canvas id="surveyChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Snapshots Table -->
+        <div class="mt-8">
+          <h3 class="text-sm font-semibold text-slate-800 mb-3">Longitudinal Snapshots History (Strict Pre-Outcome Temporal Barrier)</h3>
+          <div class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50 text-slate-600">
+                <tr>
+                  <th class="px-4 py-3 text-left font-semibold">Quarter</th>
+                  <th class="px-4 py-3 text-left font-semibold">Tenure</th>
+                  <th class="px-4 py-3 text-left font-semibold">Role Tenure</th>
+                  <th class="px-4 py-3 text-left font-semibold">Avg Hours/Wk</th>
+                  <th class="px-4 py-3 text-left font-semibold">Overtime Streak</th>
+                  <th class="px-4 py-3 text-left font-semibold">Survey Score</th>
+                  <th class="px-4 py-3 text-left font-semibold">Status Notes</th>
+                </tr>
+              </thead>
+              <tbody id="timeline-snapshots-body" class="divide-y divide-slate-100 bg-white">
+                <tr><td colspan="7" class="px-4 py-6 text-center text-slate-400">No employee selected. Click "View 360 Timeline" on any candidate card.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- TAB 3: INTERVENTIONS TOUCHPOINTS -->
+    <!-- ==================================================================== -->
+    <div id="view-interventions" class="tab-view hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Supportive Retention Interventions</h2>
+            <p class="text-xs text-slate-500">Auditable record of supportive conversations, workload rebalancing, and follow-ups.</p>
+          </div>
+          <button onclick="openInterventionModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition flex items-center shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4 mr-1.5"></i>
+            Log Retention Check-in
+          </button>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-slate-600">
+              <tr>
+                <th class="px-4 py-3 text-left font-semibold">Intervention ID</th>
+                <th class="px-4 py-3 text-left font-semibold">Employee</th>
+                <th class="px-4 py-3 text-left font-semibold">Conducted By</th>
+                <th class="px-4 py-3 text-left font-semibold">Type</th>
+                <th class="px-4 py-3 text-left font-semibold">Discussion Notes</th>
+                <th class="px-4 py-3 text-left font-semibold">Agreed Actions</th>
+                <th class="px-4 py-3 text-left font-semibold">Follow-Up</th>
+                <th class="px-4 py-3 text-left font-semibold">Outcome</th>
+              </tr>
+            </thead>
+            <tbody id="interventions-table-body" class="divide-y divide-slate-100 bg-white">
+              <!-- Loaded via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- TAB 4: DATA INTEGRITY & ANOMALY AUDIT -->
+    <!-- ==================================================================== -->
+    <div id="view-audit" class="tab-view hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Data Integrity & Anomaly Audit Suite</h2>
+            <p class="text-xs text-slate-500">Automated verification of relational constraints, temporal boundaries, and isolated negative test cases.</p>
+          </div>
+          <button onclick="runAuditSuite()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition flex items-center shadow-sm">
+            <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+            Re-run Validation Suite
+          </button>
+        </div>
+
+        <!-- Test Results Breakdown -->
+        <div class="space-y-4" id="audit-results-list">
+          <div class="text-slate-400 text-center py-6">Loading audit report...</div>
+        </div>
+
+        <!-- 4 Injected Edge Cases Ground Truth Reconciliation -->
+        <div class="mt-8 pt-6 border-t border-slate-200">
+          <h3 class="text-base font-bold text-slate-900 mb-2">Isolated Edge Cases (Ground Truth Reconciliation)</h3>
+          <p class="text-xs text-slate-500 mb-4">The problem statement requires deliberately injecting and isolating 4 negative scenarios without corrupting model features:</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="ground-truth-cards">
+            <!-- Loaded via JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Supportive Intervention Modal -->
+  <div id="intervention-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="text-base font-bold text-slate-900 flex items-center">
+          <i data-lucide="heart-handshake" class="w-5 h-5 mr-2 text-indigo-600"></i>
+          Log Supportive Retention Check-in
+        </h3>
+        <button onclick="closeInterventionModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form id="intervention-form" onsubmit="submitIntervention(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Employee ID</label>
+          <input type="text" id="modal-emp-id" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Manager / Conductor ID</label>
+          <input type="text" id="modal-mgr-id" value="EMP-000001" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Intervention Category</label>
+          <select id="modal-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+            <option value="1_ON_1_CAREER_CHECKIN">Supportive 1-on-1 Career Check-in</option>
+            <option value="WORKLOAD_REBALANCING">Workload Rebalancing & Sprint Relief</option>
+            <option value="COMPENSATION_REVIEW">Compensation & Market Equity Review</option>
+            <option value="MENTORSHIP_ALIGNMENT">Mentorship & Leadership Alignment</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Supportive Discussion Summary (Human-in-the-Loop Required)</label>
+          <textarea id="modal-summary" rows="3" required placeholder="Detail the empathetic conversation notes, employee feedback, and observed friction points..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Agreed Supportive Actions</label>
+          <input type="text" id="modal-actions" placeholder="e.g. Offload secondary project; schedule sprint capacity checkpoint." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Intervention Date</label>
+            <input type="date" id="modal-date" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Follow-Up Date</label>
+            <input type="date" id="modal-followup" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeInterventionModal()" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition">Commit Intervention</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    let prioritizedData = [];
+    let currentSelectedEmpId = null;
+    let workloadChartInstance = null;
+    let surveyChartInstance = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
+      loadKPIs();
+      loadPrioritizedList();
+    });
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('border-indigo-600', 'text-indigo-600');
+        b.classList.add('border-transparent', 'text-slate-500');
+      });
+
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      activeBtn.classList.remove('border-transparent', 'text-slate-500');
+      activeBtn.classList.add('border-indigo-600', 'text-indigo-600');
+
+      if (tabId === 'interventions') loadInterventions();
+      if (tabId === 'audit') runAuditSuite();
+    }
+
+    async function loadKPIs() {
+      try {
+        const [sumRes, metRes] = await Promise.all([
+          fetch('/api/v1/employees/summary').then(r => r.json()),
+          fetch('/api/v1/audit/metrics').then(r => r.json())
+        ]);
+
+        if (sumRes.success && sumRes.data) {
+          document.getElementById('kpi-total').innerText = sumRes.data.total_evaluated.toLocaleString();
+          document.getElementById('kpi-high').innerText = sumRes.data.high_priority_count.toLocaleString();
+          document.getElementById('kpi-medium').innerText = sumRes.data.medium_priority_count.toLocaleString();
+        }
+      } catch (e) {
+        console.error("Failed to load KPIs", e);
+      }
+    }
+
+    async function loadPrioritizedList() {
+      const dept = document.getElementById('filter-dept').value;
+      const tier = document.getElementById('filter-tier').value;
+      let url = '/api/v1/employees/prioritized?page=1&page_size=50';
+      if (dept && dept !== 'all') url += `&department=${encodeURIComponent(dept)}`;
+      if (tier) url += `&min_tier=${tier}`;
+
+      try {
+        const res = await fetch(url).then(r => r.json());
+        if (res.success) {
+          prioritizedData = res.data.items;
+          document.getElementById('count-showing').innerText = res.data.total;
+          renderWorkbenchCards(prioritizedData);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderWorkbenchCards(items) {
+      const list = document.getElementById('prioritized-list');
+      if (!items || items.length === 0) {
+        list.innerHTML = `<div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">No employees meet the current filter criteria.</div>`;
+        return;
+      }
+
+      list.innerHTML = items.map(emp => {
+        const tierBadge = emp.priority_tier === 'HIGH'
+          ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">HIGH PRIORITY • ${emp.composite_priority_score}/100</span>`
+          : emp.priority_tier === 'MEDIUM'
+          ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">MEDIUM PRIORITY • ${emp.composite_priority_score}/100</span>`
+          : `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">LOW • ${emp.composite_priority_score}/100</span>`;
+
+        const factorChips = emp.factors.map(f => `
+          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+            <div class="font-semibold text-slate-800 flex items-center justify-between mb-1">
+              <span>[${f.category}] ${f.signal_name}</span>
+              <span class="text-slate-500 font-mono">${f.raw_value}</span>
+            </div>
+            <div class="text-slate-600 text-[11px] leading-relaxed">
+              <span class="font-medium text-indigo-700">Supportive Action:</span> ${f.supportive_guidance}
+            </div>
+          </div>
+        `).join('');
+
+        const topics = emp.recommended_topics.map(t => `
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-indigo-50 text-indigo-700 font-medium">
+            • ${t}
+          </span>
+        `).join('');
+
+        return `
+          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center space-x-3 mb-1">
+                  <h3 class="text-base font-bold text-slate-900">${emp.full_name}</h3>
+                  <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600">${emp.employee_id}</span>
+                  ${tierBadge}
+                </div>
+                <p class="text-xs text-slate-500">
+                  ${emp.role_title} (${emp.role_level}) • Team: ${emp.team_name} (${emp.department}) • ${emp.tenure_months} mos tenure (${emp.months_in_role} mos in role)
+                </p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="viewEmployeeTimeline('${emp.employee_id}')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                  View 360 Timeline
+                </button>
+                <button onclick="openInterventionFor('${emp.employee_id}')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+                  Schedule 1-on-1
+                </button>
+              </div>
+            </div>
+
+            <!-- Explainable Signals Breakdown -->
+            <div class="mt-4 pt-3 border-t border-slate-100">
+              <h4 class="text-xs font-semibold text-slate-700 mb-2 flex items-center">
+                <i data-lucide="info" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>
+                Explainable Supportive Retention Drivers:
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                ${factorChips}
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                <span class="text-xs font-semibold text-slate-500 mr-1">Recommended 1-on-1 Agenda:</span>
+                ${topics}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function filterTable() {
+      const q = document.getElementById('filter-search').value.toLowerCase();
+      const filtered = prioritizedData.filter(e =>
+        e.full_name.toLowerCase().includes(q) || e.employee_id.toLowerCase().includes(q)
+      );
+      renderWorkbenchCards(filtered);
+    }
+
+    async function viewEmployeeTimeline(empId) {
+      currentSelectedEmpId = empId;
+      switchTab('timeline');
+
+      try {
+        const res = await fetch(`/api/v1/employees/${empId}/timeline`).then(r => r.json());
+        if (res.success) {
+          const t = res.data;
+          document.getElementById('timeline-avatar').innerText = t.employee.full_name.split(' ').map(n=>n[0]).join('');
+          document.getElementById('timeline-name').innerText = `${t.employee.full_name} (${t.employee.employee_id})`;
+          document.getElementById('timeline-role').innerText = `${t.employee.role_title} • ${t.employee.team_name} (${t.employee.department}) • Current Salary: $${t.employee.current_salary.toLocaleString()}`;
+
+          // Populate Snapshots Table
+          const tbody = document.getElementById('timeline-snapshots-body');
+          tbody.innerHTML = t.workload_history.map((w, idx) => {
+            const ten = t.tenure_history[idx] || {};
+            const surv = t.survey_history[idx] || {};
+            const survDisplay = surv.is_missing
+              ? `<span class="text-slate-400 italic">Optional Skip (Neutral)</span>`
+              : `<span class="font-semibold text-emerald-600">${surv.composite_engagement ? surv.composite_engagement.toFixed(1) : 'N/A'}/5.0</span>`;
+
+            const surgeBadge = w.is_benign_surge
+              ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700">Benign Launch Crunch</span>`
+              : w.avg_weekly_hours > 48
+              ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700">Elevated Workload</span>`
+              : `<span class="text-slate-500">Normal Operations</span>`;
+
+            return `
+              <tr class="hover:bg-slate-50/50">
+                <td class="px-4 py-3 font-semibold text-slate-800">${w.period_quarter}</td>
+                <td class="px-4 py-3 text-slate-600">${ten.tenure_months || '--'} mos</td>
+                <td class="px-4 py-3 text-slate-600">${ten.months_in_current_role || '--'} mos</td>
+                <td class="px-4 py-3 font-mono text-slate-800">${w.avg_weekly_hours.toFixed(1)} hrs</td>
+                <td class="px-4 py-3 font-mono text-slate-600">${w.consecutive_overtime_weeks} wks</td>
+                <td class="px-4 py-3">${survDisplay}</td>
+                <td class="px-4 py-3">${surgeBadge}</td>
+              </tr>
+            `;
+          }).join('');
+
+          // Render Charts
+          renderCharts(t.workload_history, t.survey_history);
+        }
+      } catch (e) {
+        console.error("Error loading timeline", e);
+      }
+    }
+
+    function renderCharts(workloadHistory, surveyHistory) {
+      const labels = workloadHistory.map(w => w.period_quarter);
+      const hours = workloadHistory.map(w => w.avg_weekly_hours);
+      const scores = surveyHistory.map(s => s.composite_engagement || null);
+
+      if (workloadChartInstance) workloadChartInstance.destroy();
+      if (surveyChartInstance) surveyChartInstance.destroy();
+
+      const ctxWorkload = document.getElementById('workloadChart').getContext('2d');
+      workloadChartInstance = new Chart(ctxWorkload, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Avg Weekly Hours',
+            data: hours,
+            borderColor: '#4f46e5',
+            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { min: 30, max: 60, title: { display: true, text: 'Hours / Week' } }
+          }
+        }
+      });
+
+      const ctxSurvey = document.getElementById('surveyChart').getContext('2d');
+      surveyChartInstance = new Chart(ctxSurvey, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Pulse Engagement Composite (1-5)',
+            data: scores,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            fill: true,
+            tension: 0.3,
+            spanGaps: true,
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { min: 1.0, max: 5.0, title: { display: true, text: 'Likert Score' } }
+          }
+        }
+      });
+    }
+
+    async function loadInterventions() {
+      const tbody = document.getElementById('interventions-table-body');
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Loading touchpoint log...</td></tr>`;
+
+      try {
+        const res = await fetch('/api/v1/interventions?page=1&page_size=30').then(r => r.json());
+        if (res.success && res.data.items.length > 0) {
+          tbody.innerHTML = res.data.items.map(i => `
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 font-mono text-xs font-semibold text-slate-700">${i.intervention_id}</td>
+              <td class="px-4 py-3 font-medium text-slate-900">${i.employee_name} <span class="text-xs text-slate-400 block">${i.employee_id}</span></td>
+              <td class="px-4 py-3 text-slate-600">${i.conducted_by_name}</td>
+              <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs bg-indigo-50 text-indigo-700 font-semibold">${i.intervention_type.replace(/_/g, ' ')}</span></td>
+              <td class="px-4 py-3 text-xs text-slate-700 max-w-xs truncate" title="${i.discussion_summary}">${i.discussion_summary}</td>
+              <td class="px-4 py-3 text-xs text-slate-600">${i.agreed_actions || 'N/A'}</td>
+              <td class="px-4 py-3 text-xs text-slate-500">${i.follow_up_date || '--'}</td>
+              <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs bg-emerald-50 text-emerald-700 font-semibold">${i.simulated_outcome || 'SCHEDULED'}</span></td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No supportive interventions logged yet. Click "Log Retention Check-in" above!</td></tr>`;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function runAuditSuite() {
+      const resultsDiv = document.getElementById('audit-results-list');
+      const gtCards = document.getElementById('ground-truth-cards');
+      resultsDiv.innerHTML = `<div class="text-center py-6 text-slate-400">Executing verification tests...</div>`;
+
+      try {
+        const [repRes, gtRes] = await Promise.all([
+          fetch('/api/v1/audit/validation-report').then(r => r.json()),
+          fetch('/api/v1/audit/ground-truth').then(r => r.json())
+        ]);
+
+        if (repRes.success) {
+          const rep = repRes.data;
+          resultsDiv.innerHTML = rep.check_results.map(c => {
+            const isPass = c.passed;
+            const badge = isPass
+              ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">PASS</span>`
+              : `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">ANOMALY DETECTED</span>`;
+
+            return `
+              <div class="p-4 rounded-xl border border-slate-200 flex items-start justify-between bg-slate-50/50">
+                <div>
+                  <div class="flex items-center space-x-3 mb-1">
+                    <span class="font-bold text-sm text-slate-900">${c.check_name}</span>
+                    ${badge}
+                  </div>
+                  <p class="text-xs text-slate-600">${c.details}</p>
+                  ${c.anomaly_type_detected ? `<p class="text-xs font-semibold text-amber-700 mt-1">Expected Test Anomaly Isolated: ${c.anomaly_type_detected}</p>` : ''}
+                </div>
+                <div class="text-xs font-mono text-slate-500 text-right">
+                  Checked: ${c.total_records_checked.toLocaleString()}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        if (gtRes.success) {
+          gtCards.innerHTML = gtRes.data.map(g => `
+            <div class="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-xs text-indigo-700 font-mono">${g.issue_type}</span>
+                <span class="text-xs font-mono text-slate-400">${g.anomaly_id}</span>
+              </div>
+              <p class="text-xs font-medium text-slate-800 mb-1">${g.description}</p>
+              <div class="p-2 bg-slate-50 rounded text-[11px] text-slate-600 border border-slate-100">
+                <span class="font-semibold text-slate-700">Validator Assertion:</span> ${g.expected_validation_error}
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function openInterventionFor(empId) {
+      document.getElementById('modal-emp-id').value = empId;
+      document.getElementById('intervention-modal').classList.remove('hidden');
+    }
+
+    function openInterventionModalCurrent() {
+      if (currentSelectedEmpId) openInterventionFor(currentSelectedEmpId);
+      else openInterventionModal();
+    }
+
+    function openInterventionModal() {
+      document.getElementById('modal-emp-id').value = 'EMP-000001';
+      document.getElementById('intervention-modal').classList.remove('hidden');
+    }
+
+    function closeInterventionModal() {
+      document.getElementById('intervention-modal').classList.add('hidden');
+    }
+
+    async function submitIntervention(e) {
+      e.preventDefault();
+      const payload = {
+        employee_id: document.getElementById('modal-emp-id').value,
+        conducted_by_id: document.getElementById('modal-mgr-id').value,
+        intervention_date: document.getElementById('modal-date').value,
+        intervention_type: document.getElementById('modal-type').value,
+        discussion_summary: document.getElementById('modal-summary').value,
+        agreed_actions: document.getElementById('modal-actions').value || null,
+        follow_up_date: document.getElementById('modal-followup').value || null
+      };
+
+      try {
+        const res = await fetch('/api/v1/interventions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(r => r.json());
+
+        if (res.success) {
+          alert("Supportive retention intervention logged successfully!");
+          closeInterventionModal();
+          loadPrioritizedList();
+        } else {
+          alert(`Error: ${res.detail || res.message}`);
+        }
+      } catch (err) {
+        alert("Failed to submit intervention.");
+      }
+    }
+
+    function triggerQuickValidation() {
+      switchTab('audit');
+    }
+  </script>
+</body>
+</html>
