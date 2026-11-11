@@ -49,6 +49,14 @@ class Employee(Base):
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}"
 
+    @property
+    def team_id(self) -> str:
+        return self.current_team_id
+
+    @property
+    def role_id(self) -> str:
+        return self.current_role_id
+
     __table_args__ = (
         CheckConstraint(
             "status IN ('ACTIVE', 'LEAVE', 'ATTRITED')",

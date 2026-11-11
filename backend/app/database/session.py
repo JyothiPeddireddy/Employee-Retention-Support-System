@@ -11,6 +11,9 @@ pool_kwargs = {}
 
 if settings.is_sqlite:
     connect_args["check_same_thread"] = False
+    if ":memory:" in settings.database_url:
+        from sqlalchemy.pool import StaticPool
+        pool_kwargs["poolclass"] = StaticPool
 else:
     # PostgreSQL connection pooling configuration
     pool_kwargs["pool_size"] = 10
@@ -37,3 +40,9 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def init_db():
+    """Create all registered tables."""
+    Base.metadata.create_all(bind=engine)
+

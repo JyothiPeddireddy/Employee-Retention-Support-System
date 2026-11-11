@@ -1,6 +1,10 @@
 """Pytest configuration and test database fixtures."""
+import os
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
 import pytest
 from sqlalchemy import create_engine, event
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
 from backend.app.models.base import Base
 from backend.scripts.seed_synthetic_data import DatabaseSeeder
@@ -10,7 +14,8 @@ TEST_DB_URL = "sqlite:///:memory:"
 
 test_engine = create_engine(
     TEST_DB_URL,
-    connect_args={"check_same_thread": False}
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
 )
 
 # Enforce foreign key constraints in SQLite

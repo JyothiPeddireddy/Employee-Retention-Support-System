@@ -14,7 +14,7 @@ from backend.app.models.intervention import Intervention
 from backend.app.models.intervention_event import InterventionEvent
 from backend.app.models.app_user import AppUser, UserRole
 from backend.app.models.audit_log import AuditLog
-from backend.app.models.validation import ValidationRun, ValidationIssue
+from backend.app.models.validation import ValidationRun, ValidationIssue, GroundTruthAnomaly
 from backend.app.models.analysis import AnalysisRun, SupportAssessment
 
 __all__ = [
@@ -37,6 +37,7 @@ __all__ = [
     "AuditLog",
     "ValidationRun",
     "ValidationIssue",
+    "GroundTruthAnomaly",
     "AnalysisRun",
     "SupportAssessment",
 ]

@@ -24,4 +24,8 @@ wheels/
 htmlcov/
 retention.db
 retention.db-journal
+*.db
+*.sqlite
 .env
+node_modules/
+dist/

@@ -47,3 +47,16 @@ class ValidationIssue(Base):
         Index("idx_vissue_run", "run_id"),
         Index("idx_vissue_record", "table_name", "record_id"),
     )
+
+
+class GroundTruthAnomaly(Base):
+    __tablename__ = "ground_truth_anomalies"
+
+    anomaly_id = Column(String(64), primary_key=True)  # ANOM-000001
+    record_id = Column(String(64), nullable=False)
+    table_name = Column(String(64), nullable=False)
+    issue_type = Column(String(80), nullable=False)  # FUTURE_INFO_LEAK, MISSING_SURVEY_PUNITIVE, OUTCOME_DATE_MISMATCH, UNEXPLAINED_SCORE
+    description = Column(Text, nullable=False)
+    expected_validation_error = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
