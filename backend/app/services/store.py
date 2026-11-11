@@ -58,14 +58,20 @@ class DataStoreCoordinator:
 
     def persist_to_db(self, gen: SyntheticDataGenerator, db: Session):
         """Wipe and bulk insert generated records into database with high performance."""
-        # Clean existing
+        # Clean existing in foreign key reverse order
+        from backend.app.models.intervention_event import InterventionEvent
+        from backend.app.models.team_membership import TeamMembershipHistory
+        from backend.app.models.app_user import AppUser
         db.query(GroundTruthAnomaly).delete()
+        db.query(InterventionEvent).delete()
         db.query(Intervention).delete()
         db.query(AttritionOutcome).delete()
         db.query(PromotionHistory).delete()
         db.query(EngagementSurvey).delete()
         db.query(WorkloadSnapshot).delete()
         db.query(TenureSnapshot).delete()
+        db.query(TeamMembershipHistory).delete()
+        db.query(AppUser).delete()
         db.query(Employee).delete()
         db.query(Role).delete()
         db.query(CompensationBand).delete()

@@ -1,0 +1,12 @@
+role_id,title,level,band_id
+ROLE-IC1-SWE,Associate Software Engineer,IC1,BAND-IC1
+ROLE-IC2-SWE,Software Engineer,IC2,BAND-IC2
+ROLE-IC3-SWE,Senior Software Engineer,IC3,BAND-IC3
+ROLE-IC4-SWE,Staff Software Engineer,IC4,BAND-IC4
+ROLE-IC1-PM,Associate Product Manager,IC1,BAND-IC1
+ROLE-IC2-PM,Product Manager,IC2,BAND-IC2
+ROLE-IC3-PM,Senior Product Manager,IC3,BAND-IC3
+ROLE-IC2-DES,Product Designer,IC2,BAND-IC2
+ROLE-IC3-DES,Senior Product Designer,IC3,BAND-IC3
+ROLE-M1-MGR,Engineering Manager,M1,BAND-M1
+ROLE-M2-DIR,Director of Engineering,M2,BAND-M2

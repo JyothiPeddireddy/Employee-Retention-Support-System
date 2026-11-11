@@ -1,122 +1,43 @@
-"""Supportive Interventions API Router (Human-in-the-Loop)."""
-from typing import List
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query
+"""Supportive Retention Interventions API Router (Human-in-the-Loop)."""
+from typing import Optional
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from backend.app.database.session import get_db
-from backend.app.models import Intervention, Employee
-from backend.app.schemas.intervention import InterventionCreate, InterventionResponse
+from backend.app.models.app_user import AppUser, UserRole
+from backend.app.core.dependencies import require_roles
+from backend.app.schemas.intervention import (
+    InterventionCreate, InterventionStatusUpdate, InterventionOutcomeUpdate,
+    InterventionEventCreate, InterventionResponse, InterventionDetailResponse,
+    InterventionEventResponse
+)
 from backend.app.schemas.common import APIResponse, PaginatedResponse
-from backend.app.services.store import store_coordinator
+from backend.app.services.intervention_service import InterventionService
 
-router = APIRouter(prefix="/interventions", tags=["Supportive Interventions"])
-
-
-@router.get("", response_model=APIResponse[PaginatedResponse[InterventionResponse]])
-def list_interventions(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db)
-):
-    """List logged supportive retention check-ins."""
-    query = db.query(Intervention).order_by(Intervention.intervention_date.desc())
-    total = query.count()
-    items = query.offset((page - 1) * page_size).limit(page_size).all()
-
-    results = []
-    for i in items:
-        resp = InterventionResponse(
-            intervention_id=i.intervention_id,
-            employee_id=i.employee_id,
-            employee_name=i.employee.full_name if i.employee else "Unknown",
-            conducted_by_id=i.conducted_by_id,
-            conducted_by_name=i.conducted_by.full_name if i.conducted_by else "Unknown",
-            intervention_date=i.intervention_date,
-            intervention_type=i.intervention_type,
-            discussion_summary=i.discussion_summary,
-            agreed_actions=i.agreed_actions,
-            follow_up_date=i.follow_up_date,
-            status=i.status,
-            simulated_outcome=i.simulated_outcome,
-            created_at=i.created_at
-        )
-        results.append(resp)
-
-    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
-
-    return APIResponse(
-        success=True,
-        data=PaginatedResponse(
-            items=results,
-            total=total,
-            page=page,
-            page_size=page_size,
-            total_pages=total_pages
-        )
-    )
+router = APIRouter(prefix="/interventions", tags=["Supportive Retention Interventions"])
 
 
-@router.post("", response_model=APIResponse[InterventionResponse], status_code=201)
+@router.post("", response_model=APIResponse[InterventionResponse], status_code=status.HTTP_201_CREATED)
 def log_supportive_intervention(
     payload: InterventionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[AppUser] = Depends(require_roles(UserRole.MANAGER, UserRole.HR_PARTNER, UserRole.IT_OPS_PARTNER, UserRole.ADMIN))
 ):
-    """Log a human-in-the-loop retention check-in, enforcing explainability & human review."""
-    # Policy validation: Reject unexplained or purely automated triggers
-    if not payload.discussion_summary or len(payload.discussion_summary.strip()) < 10:
-        raise HTTPException(
-            status_code=400,
-            detail="Human review required: discussion summary must contain actionable notes from supportive conversation."
-        )
-
-    if "AUTOMATED_TRIGGER_NO_REVIEW" in payload.discussion_summary:
-        raise HTTPException(
-            status_code=400,
-            detail="Compliance violation: retention interventions cannot be logged automatically without human manager review."
-        )
-
-    emp = db.query(Employee).filter(Employee.employee_id == payload.employee_id).first()
-    if not emp:
-        raise HTTPException(status_code=404, detail=f"Employee {payload.employee_id} not found.")
-
-    manager = db.query(Employee).filter(Employee.employee_id == payload.conducted_by_id).first()
-    if not manager:
-        raise HTTPException(status_code=404, detail=f"Manager {payload.conducted_by_id} not found.")
-
-    # Generate deterministic formatted ID
-    count = db.query(Intervention).count() + 1
-    new_id = f"INT-2026-{count:06d}"
-
-    intervention = Intervention(
-        intervention_id=new_id,
-        employee_id=payload.employee_id,
-        conducted_by_id=payload.conducted_by_id,
-        intervention_date=payload.intervention_date,
-        intervention_type=payload.intervention_type,
-        discussion_summary=payload.discussion_summary,
-        agreed_actions=payload.agreed_actions,
-        follow_up_date=payload.follow_up_date,
-        status=payload.status,
-        simulated_outcome="RETENTION_REINFORCED",
-        created_at=datetime.utcnow()
+    """Log a human-in-the-loop retention check-in, enforcing human review and explainability."""
+    actor_id = current_user.user_id if isinstance(current_user, AppUser) else "SYSTEM"
+    intervention = InterventionService.create_intervention(
+        db=db,
+        req=payload,
+        performed_by=actor_id
     )
-
-    db.add(intervention)
-    db.commit()
-    db.refresh(intervention)
-
-    # Refresh in-memory store
-    store_coordinator.load_from_db(db)
-
     return APIResponse(
         success=True,
-        message="Supportive retention intervention logged successfully.",
+        message=f"Intervention '{intervention.intervention_id}' logged successfully.",
         data=InterventionResponse(
             intervention_id=intervention.intervention_id,
             employee_id=intervention.employee_id,
-            employee_name=emp.full_name,
+            employee_name=intervention.employee.full_name if intervention.employee else "Unknown",
             conducted_by_id=intervention.conducted_by_id,
-            conducted_by_name=manager.full_name,
+            conducted_by_name=intervention.conducted_by.full_name if intervention.conducted_by else "Unknown",
             intervention_date=intervention.intervention_date,
             intervention_type=intervention.intervention_type,
             discussion_summary=intervention.discussion_summary,
@@ -125,5 +46,125 @@ def log_supportive_intervention(
             status=intervention.status,
             simulated_outcome=intervention.simulated_outcome,
             created_at=intervention.created_at
+        )
+    )
+
+
+@router.get("", response_model=APIResponse[PaginatedResponse[InterventionResponse]])
+def list_interventions(
+    employee_id: Optional[str] = Query(None, description="Filter by employee ID"),
+    status: Optional[str] = Query(None, description="Filter by status (SCHEDULED, COMPLETED, CANCELLED)"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: AppUser = Depends(require_roles(UserRole.MANAGER, UserRole.HR_PARTNER, UserRole.IT_OPS_PARTNER, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """List logged supportive retention check-ins with pagination."""
+    items, total = InterventionService.list_interventions(
+        db=db,
+        employee_id=employee_id,
+        status_filter=status,
+        page=page,
+        page_size=page_size
+    )
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+
+    return APIResponse(
+        success=True,
+        message=f"Retrieved {len(items)} interventions.",
+        data=PaginatedResponse(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages
+        )
+    )
+
+
+@router.get("/{intervention_id}", response_model=APIResponse[InterventionDetailResponse])
+def get_intervention_detail(
+    intervention_id: str,
+    current_user: AppUser = Depends(require_roles(UserRole.MANAGER, UserRole.HR_PARTNER, UserRole.IT_OPS_PARTNER, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """Retrieve full intervention history including all lifecycle events."""
+    detail = InterventionService.get_intervention_detail(db=db, intervention_id=intervention_id)
+    return APIResponse(
+        success=True,
+        message=f"Intervention '{intervention_id}' details retrieved.",
+        data=detail
+    )
+
+
+@router.put("/{intervention_id}/status", response_model=APIResponse[dict])
+def update_intervention_status(
+    intervention_id: str,
+    payload: InterventionStatusUpdate,
+    current_user: AppUser = Depends(require_roles(UserRole.MANAGER, UserRole.HR_PARTNER, UserRole.IT_OPS_PARTNER, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """Update intervention lifecycle status and append event."""
+    actor_id = current_user.employee_id or current_user.user_id
+    updated = InterventionService.update_status(
+        db=db,
+        intervention_id=intervention_id,
+        req=payload,
+        actor_id=actor_id,
+        performed_by=current_user.user_id
+    )
+    return APIResponse(
+        success=True,
+        message=f"Intervention '{intervention_id}' status updated to {updated.status}."
+    )
+
+
+@router.put("/{intervention_id}/outcome", response_model=APIResponse[dict])
+def update_intervention_outcome(
+    intervention_id: str,
+    payload: InterventionOutcomeUpdate,
+    current_user: AppUser = Depends(require_roles(UserRole.MANAGER, UserRole.HR_PARTNER, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """Update simulated retention outcome and append event."""
+    actor_id = current_user.employee_id or current_user.user_id
+    updated = InterventionService.update_outcome(
+        db=db,
+        intervention_id=intervention_id,
+        req=payload,
+        actor_id=actor_id,
+        performed_by=current_user.user_id
+    )
+    return APIResponse(
+        success=True,
+        message=f"Intervention '{intervention_id}' outcome updated to {updated.simulated_outcome}."
+    )
+
+
+@router.post("/{intervention_id}/events", response_model=APIResponse[InterventionEventResponse], status_code=status.HTTP_201_CREATED)
+def record_intervention_event(
+    intervention_id: str,
+    payload: InterventionEventCreate,
+    current_user: AppUser = Depends(require_roles(UserRole.MANAGER, UserRole.HR_PARTNER, UserRole.IT_OPS_PARTNER, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """Append a lifecycle touchpoint event to an existing intervention."""
+    event = InterventionService.add_event(
+        db=db,
+        intervention_id=intervention_id,
+        req=payload,
+        performed_by=current_user.user_id
+    )
+    return APIResponse(
+        success=True,
+        message=f"Event '{event.event_id}' recorded on intervention '{intervention_id}'.",
+        data=InterventionEventResponse(
+            event_id=event.event_id,
+            intervention_id=event.intervention_id,
+            event_type=event.event_type,
+            event_timestamp=event.event_timestamp,
+            actor_id=event.actor_id,
+            actor_name=event.actor.full_name if event.actor else "Unknown",
+            notes=event.notes
         )
     )

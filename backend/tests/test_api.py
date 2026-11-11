@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 @pytest.fixture(scope="session", autouse=True)
 def init_store():
-    store_coordinator.initialize(scale=100)
+    store_coordinator.initialize(scale=100, force_regenerate=True)
 
 
 @pytest.fixture

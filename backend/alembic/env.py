@@ -28,15 +28,16 @@ if config.config_file_name is not None:
 # Target metadata for autogenerate support
 target_metadata = Base.metadata
 
-# Retrieve dynamic DB URL from application settings
+# Retrieve dynamic DB URL from application settings or environment override
 settings = get_settings()
-database_url = settings.database_url
+custom_url = config.get_main_option("sqlalchemy.url")
+database_url = custom_url if custom_url and custom_url != "%(DATABASE_URL)s" else (os.environ.get("DATABASE_URL") or settings.database_url)
 config.set_main_option("sqlalchemy.url", database_url)
 
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
-    url = config.get_main_option("sqlalchemy.url")
+    url = config.get_main_option("sqlalchemy.url") or database_url
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -51,7 +52,7 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     configuration = config.get_section(config.config_ini_section) or {}
-    configuration["sqlalchemy.url"] = database_url
+    configuration["sqlalchemy.url"] = config.get_main_option("sqlalchemy.url") or database_url
 
     connectable = engine_from_config(
         configuration,

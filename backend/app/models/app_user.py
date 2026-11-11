@@ -10,8 +10,11 @@ from backend.app.models.base import Base
 
 
 class UserRole(str, enum.Enum):
-    HR_PARTNER = "HR_PARTNER"
+    EMPLOYEE = "EMPLOYEE"
     MANAGER = "MANAGER"
+    HR_PARTNER = "HR_PARTNER"
+    IT_OPS_PARTNER = "IT_OPS_PARTNER"
+    ADMIN = "ADMIN"
     SYSTEM_ADMIN = "SYSTEM_ADMIN"
     AUDITOR = "AUDITOR"
 
@@ -34,7 +37,7 @@ class AppUser(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "role IN ('HR_PARTNER', 'MANAGER', 'SYSTEM_ADMIN', 'AUDITOR')",
+            "role IN ('EMPLOYEE', 'MANAGER', 'HR_PARTNER', 'IT_OPS_PARTNER', 'ADMIN', 'SYSTEM_ADMIN', 'AUDITOR')",
             name="chk_user_role"
         ),
         Index("idx_users_role", "role"),

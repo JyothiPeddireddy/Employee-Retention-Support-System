@@ -5,7 +5,7 @@ from sqlalchemy import (
     Column, String, Numeric, Date, DateTime,
     ForeignKey, CheckConstraint, Index
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, synonym
 from backend.app.models.base import Base
 
 
@@ -45,17 +45,12 @@ class Employee(Base):
     interventions = relationship("Intervention", back_populates="employee", foreign_keys="Intervention.employee_id", cascade="all, delete-orphan")
     support_assessments = relationship("SupportAssessment", back_populates="employee", cascade="all, delete-orphan")
 
+    role_id = synonym("current_role_id")
+    team_id = synonym("current_team_id")
+
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}"
-
-    @property
-    def team_id(self) -> str:
-        return self.current_team_id
-
-    @property
-    def role_id(self) -> str:
-        return self.current_role_id
 
     __table_args__ = (
         CheckConstraint(

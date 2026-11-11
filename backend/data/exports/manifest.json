@@ -1,0 +1,18 @@
+{
+  "seed": 20261022,
+  "scale": 100,
+  "generated_at": "2026-11-11T15:00:05.918594",
+  "row_counts": {
+    "teams": 8,
+    "compensation_bands": 6,
+    "roles": 11,
+    "employees": 100,
+    "tenure_snapshots": 800,
+    "workload_snapshots": 800,
+    "engagement_surveys": 800,
+    "promotion_histories": 14,
+    "attrition_outcomes": 100,
+    "ground_truth_anomalies": 10,
+    "interventions": 16
+  }
+}

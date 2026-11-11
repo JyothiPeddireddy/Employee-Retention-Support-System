@@ -1,7 +1,7 @@
 """Schemas for Employee and Longitudinal Snapshots."""
 from typing import Optional, List
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class TeamSchema(BaseModel):
@@ -80,6 +80,30 @@ class AttritionOutcomeSchema(BaseModel):
     horizon_period: str
 
 
+class EmployeeCreate(BaseModel):
+    employee_id: Optional[str] = Field(None, example="EMP-000001")
+    first_name: str = Field(..., min_length=1, max_length=50, example="Alex")
+    last_name: str = Field(..., min_length=1, max_length=50, example="Taylor")
+    email: EmailStr = Field(..., example="alex.taylor@company.internal")
+    role_id: str = Field(..., example="ROLE-001")
+    team_id: str = Field(..., example="TEAM-001")
+    manager_id: Optional[str] = Field(None, example="EMP-000002")
+    hire_date: date = Field(..., example="2024-01-15")
+    current_salary: float = Field(..., gt=0, example=120000.0)
+    status: str = Field("ACTIVE", example="ACTIVE")
+
+
+class EmployeeUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    email: Optional[EmailStr] = None
+    role_id: Optional[str] = None
+    team_id: Optional[str] = None
+    manager_id: Optional[str] = None
+    current_salary: Optional[float] = Field(None, gt=0)
+    status: Optional[str] = None
+
+
 class EmployeeListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     employee_id: str
@@ -95,9 +119,14 @@ class EmployeeListItem(BaseModel):
 
 
 class EmployeeDetail(EmployeeListItem):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    team_id: Optional[str] = None
+    role_id: Optional[str] = None
     manager_id: Optional[str] = None
-    tenure_months: int
-    months_in_role: int
+    manager_name: Optional[str] = None
+    tenure_months: int = 0
+    months_in_role: int = 0
 
 
 class EmployeeTimeline(BaseModel):
