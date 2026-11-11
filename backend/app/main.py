@@ -10,10 +10,12 @@ for p in [workspace_root, backend_dir]:
         sys.path.insert(0, p)
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 
 from backend.app.core.config import get_settings
 from backend.app.routers import (
@@ -59,11 +61,46 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch-all unhandled exception handler ensuring CORS headers and clean error reporting."""
+    logging.error(f"Unhandled exception on {request.method} {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "message": "Internal Server Error",
+            "detail": str(exc)
+        }
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handler for request validation errors ensuring clear frontend reporting."""
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "message": "Validation Error",
+            "detail": exc.errors()
+        }
+    )
 
 # Mount all API Routers under /api/v1
 app.include_router(auth_router, prefix="/api/v1")

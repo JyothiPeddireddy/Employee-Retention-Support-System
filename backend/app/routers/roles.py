@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from backend.app.database.session import get_db
 from backend.app.models.app_user import AppUser, UserRole
 from backend.app.core.dependencies import get_current_user, require_roles
-from backend.app.schemas.team_role import RoleCreate, RoleResponse
+from backend.app.schemas.team_role import RoleCreate, RoleUpdate, RoleResponse
 from backend.app.schemas.common import APIResponse
 from backend.app.services.team_service import RoleService
 
@@ -39,4 +39,35 @@ def list_roles(
         success=True,
         message=f"Retrieved {len(roles)} roles.",
         data=roles
+    )
+
+
+@router.put("/{role_id}", response_model=APIResponse[RoleResponse])
+def update_role(
+    role_id: str,
+    payload: RoleUpdate,
+    current_user: AppUser = Depends(require_roles(UserRole.HR_PARTNER, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """Update an existing job classification role."""
+    role = RoleService.update_role(db=db, role_id=role_id, req=payload, performed_by=current_user.user_id)
+    return APIResponse(
+        success=True,
+        message=f"Role '{role.title}' updated successfully.",
+        data=RoleResponse.model_validate(role)
+    )
+
+
+@router.delete("/{role_id}", response_model=APIResponse[dict])
+def delete_role(
+    role_id: str,
+    current_user: AppUser = Depends(require_roles(UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """Delete a job classification role if no employees are assigned."""
+    RoleService.delete_role(db=db, role_id=role_id, performed_by=current_user.user_id)
+    return APIResponse(
+        success=True,
+        message=f"Role '{role_id}' deleted successfully.",
+        data={"role_id": role_id}
     )

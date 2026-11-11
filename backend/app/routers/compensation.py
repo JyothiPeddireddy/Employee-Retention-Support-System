@@ -6,7 +6,7 @@ from backend.app.database.session import get_db
 from backend.app.models.app_user import AppUser, UserRole
 from backend.app.core.dependencies import require_roles
 from backend.app.schemas.compensation import (
-    BandCreate, BandResponse, PromotionCreate, PromotionResponse
+    BandCreate, BandUpdate, BandResponse, PromotionCreate, PromotionResponse
 )
 from backend.app.schemas.common import APIResponse
 from backend.app.services.compensation_service import CompensationService
@@ -45,6 +45,27 @@ def list_compensation_bands(
         success=True,
         message=f"Retrieved {len(bands)} compensation bands.",
         data=bands
+    )
+
+
+@router.put("/bands/{band_id}", response_model=APIResponse[BandResponse])
+def update_compensation_band(
+    band_id: str,
+    payload: BandUpdate,
+    current_user: AppUser = Depends(require_roles(UserRole.HR_PARTNER, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """Update an existing compensation band."""
+    band = CompensationService.update_band(
+        db=db,
+        band_id=band_id,
+        req=payload,
+        performed_by=current_user.user_id
+    )
+    return APIResponse(
+        success=True,
+        message=f"Band '{band.band_id}' updated successfully.",
+        data=BandResponse.model_validate(band)
     )
 
 

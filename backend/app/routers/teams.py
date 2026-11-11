@@ -6,7 +6,7 @@ from backend.app.database.session import get_db
 from backend.app.models.app_user import AppUser, UserRole
 from backend.app.core.dependencies import get_current_user, require_roles
 from backend.app.schemas.team_role import (
-    TeamCreate, TeamResponse, TeamMemberResponse, TeamTransferRequest
+    TeamCreate, TeamUpdate, TeamResponse, TeamMemberResponse, TeamTransferRequest
 )
 from backend.app.schemas.common import APIResponse
 from backend.app.services.team_service import TeamService
@@ -29,8 +29,32 @@ def create_team(
             team_id=team.team_id,
             name=team.name,
             department=team.department,
-            lead_employee_id=team.lead_employee_id,
+            lead_employee_id=getattr(team, "lead_employee_id", None),
             member_count=0,
+            created_at=team.created_at
+        )
+    )
+
+
+@router.put("/{team_id}", response_model=APIResponse[TeamResponse])
+def update_team(
+    team_id: str,
+    payload: TeamUpdate,
+    current_user: AppUser = Depends(require_roles(UserRole.HR_PARTNER, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """Update existing team details."""
+    team = TeamService.update_team(db=db, team_id=team_id, req=payload, performed_by=current_user.user_id)
+    member_count = db.query(Employee).filter(Employee.current_team_id == team_id).count()
+    return APIResponse(
+        success=True,
+        message=f"Team '{team.name}' updated successfully.",
+        data=TeamResponse(
+            team_id=team.team_id,
+            name=team.name,
+            department=team.department,
+            lead_employee_id=getattr(team, "lead_employee_id", None),
+            member_count=member_count,
             created_at=team.created_at
         )
     )

@@ -41,8 +41,10 @@ class TeamMemberResponse(BaseModel):
 class TeamTransferRequest(BaseModel):
     employee_id: str = Field(..., example="EMP-000005")
     target_team_id: str = Field(..., example="TEAM-002")
+    new_role_id: Optional[str] = Field(None, example="ROLE-IC3-SWE")
     effective_date: date = Field(..., example="2026-04-01")
     transfer_reason: Optional[str] = Field("Strategic internal mobility", example="Strategic internal mobility")
+    reason: Optional[str] = None
 
 
 class RoleCreate(BaseModel):

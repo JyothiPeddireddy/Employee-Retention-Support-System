@@ -13,6 +13,14 @@ class BandCreate(BaseModel):
     currency: str = Field("USD", max_length=3, example="USD")
 
 
+class BandUpdate(BaseModel):
+    name: Optional[str] = None
+    min_salary: Optional[float] = Field(None, gt=0, example=145000.0)
+    mid_salary: Optional[float] = Field(None, gt=0, example=175000.0)
+    max_salary: Optional[float] = Field(None, gt=0, example=215000.0)
+    currency: Optional[str] = Field(None, max_length=3, example="USD")
+
+
 class BandResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     band_id: str

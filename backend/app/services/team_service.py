@@ -26,16 +26,10 @@ class TeamService:
         if db.query(Team).filter(Team.team_id == team_id).first():
             raise HTTPException(status_code=400, detail=f"Team ID '{team_id}' already exists.")
 
-        if req.lead_employee_id:
-            lead = db.query(Employee).filter(Employee.employee_id == req.lead_employee_id).first()
-            if not lead:
-                raise HTTPException(status_code=400, detail=f"Lead employee '{req.lead_employee_id}' not found.")
-
         team = Team(
             team_id=team_id,
             name=req.name,
-            department=req.department,
-            lead_employee_id=req.lead_employee_id
+            department=req.department
         )
         db.add(team)
         db.flush()
@@ -63,16 +57,44 @@ class TeamService:
         teams = query.all()
         results = []
         for t in teams:
-            member_count = db.query(Employee).filter(Employee.team_id == t.team_id).count()
+            member_count = db.query(Employee).filter(Employee.current_team_id == t.team_id).count()
             results.append(TeamResponse(
                 team_id=t.team_id,
                 name=t.name,
                 department=t.department,
-                lead_employee_id=t.lead_employee_id,
+                lead_employee_id=getattr(t, "lead_employee_id", None),
                 member_count=member_count,
                 created_at=t.created_at
             ))
         return results
+
+    @staticmethod
+    def update_team(db: Session, team_id: str, req: TeamUpdate, performed_by: str) -> Team:
+        """Update existing team details."""
+        team = db.query(Team).filter(Team.team_id == team_id).first()
+        if not team:
+            raise HTTPException(status_code=404, detail=f"Team '{team_id}' not found.")
+
+        changes = {}
+        if req.name is not None:
+            changes["name"] = {"from": team.name, "to": req.name}
+            team.name = req.name
+        if req.department is not None:
+            changes["department"] = {"from": team.department, "to": req.department}
+            team.department = req.department
+
+        db.add(team)
+        AuditService.log_action(
+            db=db,
+            entity_name="teams",
+            entity_id=team_id,
+            action="UPDATE",
+            performed_by=performed_by,
+            changes=changes
+        )
+        db.commit()
+        db.refresh(team)
+        return team
 
     @staticmethod
     def get_team_members(db: Session, team_id: str) -> List[TeamMemberResponse]:
@@ -81,7 +103,8 @@ class TeamService:
         if not team:
             raise HTTPException(status_code=404, detail=f"Team '{team_id}' not found.")
 
-        members = db.query(Employee).filter(Employee.team_id == team_id).all()
+        members = db.query(Employee).filter(Employee.current_team_id == team_id).all()
+        lead_id = getattr(team, "lead_employee_id", None)
         results = []
         for m in members:
             results.append(TeamMemberResponse(
@@ -91,7 +114,7 @@ class TeamService:
                 role_title=m.role.title if m.role else "N/A",
                 role_level=m.role.level if m.role else "N/A",
                 status=m.status,
-                is_lead=(m.employee_id == team.lead_employee_id)
+                is_lead=(lead_id is not None and m.employee_id == lead_id)
             ))
         return results
 
@@ -110,7 +133,8 @@ class TeamService:
         if not target_team:
             raise HTTPException(status_code=404, detail=f"Target team '{req.target_team_id}' not found.")
 
-        old_team_id = emp.team_id
+        old_team_id = emp.current_team_id
+        target_role_id = req.new_role_id if getattr(req, "new_role_id", None) else emp.current_role_id
 
         # Close current membership history record
         current_membership = db.query(TeamMembershipHistory).filter(
@@ -129,20 +153,24 @@ class TeamService:
         ).count() + 1
         new_membership_id = f"MEM-{req.employee_id}-{mem_count:03d}"
 
+        transfer_reason_val = getattr(req, "transfer_reason", None) or getattr(req, "reason", None) or "INTERNAL_TRANSFER"
+
         new_membership = TeamMembershipHistory(
             membership_id=new_membership_id,
             employee_id=req.employee_id,
             team_id=req.target_team_id,
-            role_id=emp.current_role_id,
+            role_id=target_role_id,
             effective_start_date=req.effective_date,
             effective_end_date=None,
             is_current=True,
-            transfer_reason=req.transfer_reason or "INTERNAL_TRANSFER"
+            transfer_reason=transfer_reason_val
         )
         db.add(new_membership)
 
-        # Update current employee team
+        # Update current employee team and role
         emp.current_team_id = req.target_team_id
+        if getattr(req, "new_role_id", None):
+            emp.current_role_id = req.new_role_id
         db.add(emp)
 
         AuditService.log_action(
@@ -179,7 +207,6 @@ class RoleService:
         role = Role(
             role_id=role_id,
             title=req.title,
-            department=req.department,
             level=req.level,
             band_id=req.band_id
         )
@@ -203,9 +230,11 @@ class RoleService:
     def list_roles(db: Session, department: Optional[str] = None) -> List[RoleResponse]:
         """List standard company roles."""
         query = db.query(Role)
-        if department:
-            query = query.filter(Role.department.ilike(f"%{department}%"))
         roles = query.all()
+        if department:
+            dept_lower = department.lower()
+            roles = [r for r in roles if dept_lower in (r.department or "").lower()]
+
         return [
             RoleResponse(
                 role_id=r.role_id,
@@ -217,3 +246,59 @@ class RoleService:
             )
             for r in roles
         ]
+
+    @staticmethod
+    def update_role(db: Session, role_id: str, req: RoleUpdate, performed_by: str) -> Role:
+        """Update existing role classification."""
+        role = db.query(Role).filter(Role.role_id == role_id).first()
+        if not role:
+            raise HTTPException(status_code=404, detail=f"Role '{role_id}' not found.")
+
+        changes = {}
+        if req.title is not None:
+            changes["title"] = {"from": role.title, "to": req.title}
+            role.title = req.title
+        if req.level is not None:
+            changes["level"] = {"from": role.level, "to": req.level}
+            role.level = req.level
+        if req.band_id is not None:
+            changes["band_id"] = {"from": role.band_id, "to": req.band_id}
+            role.band_id = req.band_id
+
+        db.add(role)
+        AuditService.log_action(
+            db=db,
+            entity_name="roles",
+            entity_id=role_id,
+            action="UPDATE",
+            performed_by=performed_by,
+            changes=changes
+        )
+        db.commit()
+        db.refresh(role)
+        return role
+
+    @staticmethod
+    def delete_role(db: Session, role_id: str, performed_by: str) -> None:
+        """Delete role classification if no active employees are assigned."""
+        role = db.query(Role).filter(Role.role_id == role_id).first()
+        if not role:
+            raise HTTPException(status_code=404, detail=f"Role '{role_id}' not found.")
+
+        in_use = db.query(Employee).filter(Employee.current_role_id == role_id).count()
+        if in_use > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot delete role '{role_id}': {in_use} active employee(s) assigned."
+            )
+
+        AuditService.log_action(
+            db=db,
+            entity_name="roles",
+            entity_id=role_id,
+            action="DELETE",
+            performed_by=performed_by,
+            changes={"role_id": role_id}
+        )
+        db.delete(role)
+        db.commit()

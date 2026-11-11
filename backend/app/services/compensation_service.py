@@ -8,7 +8,7 @@ from backend.app.models.promotion_history import PromotionHistory
 from backend.app.models.employee import Employee
 from backend.app.models.role import Role
 from backend.app.schemas.compensation import (
-    BandCreate, BandResponse, PromotionCreate, PromotionResponse
+    BandCreate, BandUpdate, BandResponse, PromotionCreate, PromotionResponse
 )
 from backend.app.services.audit_service import AuditService
 
@@ -52,21 +52,59 @@ class CompensationService:
         """List compensation bands."""
         query = db.query(CompensationBand)
         if department:
-            query = query.filter(CompensationBand.department.ilike(f"%{department}%"))
+            query = query.filter(CompensationBand.name.ilike(f"%{department}%") | CompensationBand.band_id.ilike(f"%{department}%"))
         bands = query.all()
         return [
             BandResponse(
                 band_id=b.band_id,
-                department=b.department,
-                job_level=b.job_level,
+                name=b.name,
                 min_salary=float(b.min_salary),
                 mid_salary=float(b.mid_salary),
                 max_salary=float(b.max_salary),
-                currency=b.currency,
-                effective_year=b.effective_year
+                currency=b.currency
             )
             for b in bands
         ]
+
+    @staticmethod
+    def update_band(db: Session, band_id: str, req: BandUpdate, performed_by: str) -> CompensationBand:
+        """Update an existing compensation band."""
+        band = db.query(CompensationBand).filter(CompensationBand.band_id == band_id).first()
+        if not band:
+            raise HTTPException(status_code=404, detail=f"Compensation band '{band_id}' not found.")
+
+        changes = {}
+        if req.name is not None:
+            changes["name"] = req.name
+            band.name = req.name
+        if req.min_salary is not None:
+            changes["min_salary"] = req.min_salary
+            band.min_salary = req.min_salary
+        if req.mid_salary is not None:
+            changes["mid_salary"] = req.mid_salary
+            band.mid_salary = req.mid_salary
+        if req.max_salary is not None:
+            changes["max_salary"] = req.max_salary
+            band.max_salary = req.max_salary
+        if req.currency is not None:
+            changes["currency"] = req.currency
+            band.currency = req.currency
+
+        if band.min_salary >= band.max_salary:
+            raise HTTPException(status_code=400, detail="min_salary must be strictly less than max_salary.")
+
+        AuditService.log_action(
+            db=db,
+            entity_name="compensation_bands",
+            entity_id=band_id,
+            action="UPDATE",
+            performed_by=performed_by,
+            changes=changes
+        )
+
+        db.commit()
+        db.refresh(band)
+        return band
 
     @staticmethod
     def record_promotion(db: Session, req: PromotionCreate, performed_by: str) -> PromotionHistory:

@@ -1,7 +1,7 @@
 """FastAPI authentication, authorization, and RBAC dependencies."""
 from typing import List, Optional
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from backend.app.database.session import get_db
 from backend.app.core.security import decode_access_token
@@ -9,14 +9,54 @@ from backend.app.models.app_user import AppUser, UserRole
 from backend.app.models.employee import Employee
 from backend.app.models.team import Team
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/v1/auth/login",
-    auto_error=True
-)
+
+class HTTPBearerAuth(HTTPBearer):
+    """HTTP Bearer security scheme compatible with JWT access tokens and Swagger UI."""
+
+    def __init__(self, auto_error: bool = False):
+        super().__init__(
+            auto_error=auto_error,
+            bearerFormat="JWT",
+            scheme_name="HTTPBearer",
+            description="Enter the JWT access token obtained from /api/v1/auth/login (format: <token> or Bearer <token>)"
+        )
+
+    async def __call__(self, request: Request) -> Optional[HTTPAuthorizationCredentials]:
+        auth_header = request.headers.get("Authorization")
+        if auth_header:
+            parts = auth_header.strip().split(" ", 1)
+            if len(parts) == 1 and parts[0]:
+                return HTTPAuthorizationCredentials(scheme="Bearer", credentials=parts[0].strip())
+            elif len(parts) == 2 and parts[0].lower() == "bearer":
+                return HTTPAuthorizationCredentials(scheme="Bearer", credentials=parts[1].strip())
+        return await super().__call__(request)
+
+
+http_bearer = HTTPBearerAuth()
+
+
+def get_current_token(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(http_bearer)
+) -> str:
+    """Extract raw JWT bearer token string from request authorization header."""
+    if not credentials or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials or token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = credentials.credentials.strip()
+    if token.startswith("Bearer "):
+        token = token[7:].strip()
+    return token
+
+
+# Alias for backward compatibility
+oauth2_scheme = get_current_token
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    token: str = Depends(get_current_token),
     db: Session = Depends(get_db)
 ) -> AppUser:
     """Validate bearer token and retrieve active AppUser."""
