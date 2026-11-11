@@ -1,2 +1,0 @@
-intervention_id,employee_id,conducted_by_id,intervention_date,intervention_type,discussion_summary,agreed_actions,follow_up_date,status,simulated_outcome,created_at
-INT-2026-000001,EMP-000002,EMP-000001,2025-11-05,WORKLOAD_REBALANCING,AUTOMATED_TRIGGER_NO_REVIEW,Rebalance sprint commitments; scheduled quarterly career roadmap milestone.,2025-12-05,COMPLETED,RETENTION_REINFORCED,2025-11-05 10:00:00

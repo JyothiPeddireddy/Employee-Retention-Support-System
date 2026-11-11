@@ -1,9 +1,0 @@
-team_id,name,department,created_at
-TEAM-ENG-01,Core Platform,Engineering,2023-01-01 00:00:00
-TEAM-ENG-02,Cloud Infrastructure,Engineering,2023-01-01 00:00:00
-TEAM-ENG-03,Data Engineering,Engineering,2023-01-01 00:00:00
-TEAM-PROD-01,Product Management,Product,2023-01-01 00:00:00
-TEAM-DES-01,Product Design,Design,2023-01-01 00:00:00
-TEAM-CUST-01,Customer Success,Operations,2023-01-01 00:00:00
-TEAM-SALES-01,Enterprise Sales,Sales,2023-01-01 00:00:00
-TEAM-PEOPLE-01,Talent & People Ops,Human Resources,2023-01-01 00:00:00
